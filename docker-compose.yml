@@ -1,0 +1,59 @@
+name: jungle-wagering
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jungle
+      POSTGRES_PASSWORD: jungle
+      POSTGRES_DB: jungle
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jungle -d jungle"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      SERVICES: sqs
+      DEBUG: "0"
+    ports:
+      - "4566:4566"
+    volumes:
+      # Roda depois que o LocalStack fica pronto e cria as filas FIFO + DLQ.
+      - ./docker/localstack/init-queues.sh:/etc/localstack/init/ready.d/init-queues.sh
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/health || exit 1"]
+      interval: 6s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    # Aplica as migrations antes de subir o servidor. Em modo estrito, o schema
+    # nunca é alterado pelo ORM em runtime — só por migration versionada.
+    command: ["sh", "-c", "bun run migration:up && bun run start"]
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "bun -e \"fetch('http://localhost:3000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  pgdata:
