@@ -5,10 +5,6 @@ Serviço financeiro distribuído que processa transações de apostas
 mantendo a correção quando as mensagens chegam **duplicadas**, **fora de ordem** ou
 **em paralelo**, e mesmo quando o processo morre no meio.
 
-- Enunciado do desafio: [CHALLENGE.md](CHALLENGE.md)
-- Decisões, trade-offs e limitações: [ARCHITECTURE.md](ARCHITECTURE.md)
-- Cronograma / notas de apresentação: [CRONOGRAMA.md](CRONOGRAMA.md)
-
 ---
 
 ## Stack
